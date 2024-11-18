@@ -1,0 +1,8 @@
+Rough plan for EDA
+
+Plot response variable
+Plot response vs predictors (pairplot in R)
+Check for NaNs and missing values
+Check datatypes
+
+Light analysis

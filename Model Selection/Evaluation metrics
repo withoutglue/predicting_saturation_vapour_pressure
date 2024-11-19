@@ -1,1 +1,9 @@
-List evaluation metrics to comapre models
+List evaluation metrics to comapre models:
+
+We can start by repeating Problem 2 from Set 1 of IML
+
+CV
+MSE
+
+
+On both training and validation sets

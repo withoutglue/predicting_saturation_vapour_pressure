@@ -1,8 +1,12 @@
 Rough plan for EDA
 
-Plot response variable
+Define the source of data
+
+Plot all variables to spot distributions
 Plot response vs predictors (pairplot in R)
+Check correlations between variables
 Check for NaNs and missing values
 Check datatypes
+Check summary statistics on data
 
-Light analysis
+Do we have domain knowledge on this?

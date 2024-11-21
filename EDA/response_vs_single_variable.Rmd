@@ -1,0 +1,62 @@
+---
+title: "IML Term project"
+author: "KS"
+date: "2024-11-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load libraries
+
+```{r load libraries}
+library(tidyverse)
+library(caret)
+library(glmnetUtils)
+library(rpart)
+```
+
+Read data
+
+```{r}
+train_kaggle <- read.csv("train_kaggle.csv")
+```
+
+## Exploratory data analysis
+
+
+Our response variable is log_pSta_Pa.
+
+For starters we modeled each explanatory variable against our response variable to see if we can drop some variables in this phase.
+
+
+#### Model each variable against response
+
+```{r}
+# Get the names of predictor variables (excluding the response)
+predictor_names <- names(train_kaggle)[-which(names(train_kaggle) == "log_pSat_Pa")]
+
+# Loop through each predictor
+for (predictor in predictor_names) {
+  # Create the formula dynamically
+  formula <- as.formula(paste("log_pSat_Pa ~", predictor))
+
+  # Fit the linear model
+  model <- lm(formula, data = train_kaggle)
+
+  # Print the summary
+  print(summary(model))
+
+  # Optional: Add a separator between model outputs
+  cat("\n--------------------\n\n")
+}
+```
+
+#### Analysis
+
+We decided to drop all variables that had adjusted R-squared < 0.01.
+
+We dropped following variables: numOfConfUsed, C.C..non.aromatic., C.C.C.O.in.non.aromatic.ring, aldehyde, ester, ether..alicyclic., nitrate, nitro, aromatic.hydroxyl, peroxide and nitroester.
+

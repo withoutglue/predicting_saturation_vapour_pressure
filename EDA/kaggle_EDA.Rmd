@@ -1,0 +1,85 @@
+---
+title: "Exercise Set 2"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+urlcolor: blue
+---
+
+
+```{r}
+# read the data sets
+kaggle_train <- read.csv("kaggle/train_kaggle.csv", header=TRUE)
+kaggle_test <- read.csv("kaggle/test_kaggle.csv", header=TRUE)
+```
+
+Now we're going to do some EDA, first let's draw the histograms of the variables.
+
+```{r}
+# histograms of predictors
+library(ggplot2)
+for (name in names(kaggle_train)[-c(1, which(names(kaggle_train) == "parentspecies"))]) {
+  hist(kaggle_train[,name], main=name, xlab=name)
+  
+}
+
+ggplot(kaggle_train, aes(x=parentspecies)) + geom_bar()
+```
+
+It's apparent from the plots, that some of the variables have very one-sided distributions, for example C.C.C.O.in.non.aromatic.ring and aromatic.hydroxyl have almost none values 1, which means that no molecules have these groups. 
+
+Let's also draw a correlation matrix of the variables. 
+
+```{r}
+cor(kaggle_train[,-c(1, which(names(kaggle_train) == "parentspecies"))])
+```
+
+There are some heavily correlated, let's see if in the feature selection, for example dimension reduction, these will cancel out. 
+
+Let's check the missing values.
+
+```{r}
+# Missing values
+colSums(is.na(kaggle_train))
+```
+
+No missing values found. 
+
+Some plots about the most correlated variables. 
+
+```{r}
+plot(NumOfAtoms ~ NumOfC, data=kaggle_train)
+```
+
+```{r}
+plot(NumOfO ~ MW, data=kaggle_train)
+```
+
+Now let's model linear regression with all the predictors. 
+
+```{r}
+all.kaggle.fit <- lm(log_pSat_Pa ~ ., data=kaggle_train[,-c(1)])
+summary(all.kaggle.fit)
+
+```
+
+R-squared is 0.7067 and several variables have very high p-values and and some even have estimates NA. 
+From the single value regressions we selected to remove these variables from the dataset. Also removed NumOfN from the predictors since it did not give any response still. 
+
+```{r}
+# 
+draft1.kaggle.fit <- lm(log_pSat_Pa ~ ., data=kaggle_train[,!names(kaggle_train) %in% c("ID", "NumOfConfUsed", "C.C..non.aromatic.", "C.C.C.O.in.non.aromatic.ring", "aldehyde", "ester", "ether..alicyclic.", "nitrate", "nitro", "aromatic.hydroxyl", "peroxide", "nitroester", "NumOfN")])
+summary(draft1.kaggle.fit)
+```
+
+We can see, that the Multiple R-squared drops only a tiny fraction from the model with all predictors, with 12 of the predictors removed!
+
+```{r}
+# make a csv with the parsed data
+write.csv(kaggle_train[,!names(kaggle_train) %in% c("NumOfConfUsed", "C.C..non.aromatic.", "C.C.C.O.in.non.aromatic.ring", "aldehyde", "ester", "ether..alicyclic.", "nitrate", "nitro", "aromatic.hydroxyl", "peroxide", "nitroester", "NumOfN")], file="kaggle_train_cleaned1.csv")
+
+
+```
+

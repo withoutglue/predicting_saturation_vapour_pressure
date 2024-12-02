@@ -1,0 +1,96 @@
+---
+title: "Model 1 predictions"
+author: "KS"
+date: "2024-11-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(caret)
+```
+
+
+Load data:
+
+```{r}
+# read the data sets
+sample_train <- read.csv("sample_kaggle_train.csv", header=TRUE)
+sample_valid <- read.csv("sample_kaggle_valid.csv", header=TRUE)
+sample_test <- read.csv("sample_kaggle_test.csv", header=TRUE)
+```
+
+Drop variables based on EDA
+
+```{r}
+# Define the columns to drop
+cols_to_drop <- c("ID", "NumOfConfUsed", "C.C..non.aromatic.", "C.C.C.O.in.non.aromatic.ring", 
+                  "aldehyde", "ester", "ether..alicyclic.", "nitrate", "nitro", "aromatic.hydroxyl", 
+                  "peroxide", "nitroester", "NumOfN")
+
+# Drop the columns from each data set
+sample_train <- sample_train %>% 
+  select(-all_of(cols_to_drop))
+
+sample_valid <- sample_valid %>% 
+  select(-all_of(cols_to_drop))
+
+sample_test <- sample_test %>% 
+  select(-all_of(cols_to_drop)) 
+```
+
+Train model1.lm
+
+```{r}
+model1.lm <- lm(log_pSat_Pa ~ ., data=sample_train)
+summary(model1.lm)
+```
+
+Prediction on validation set:
+
+```{r}
+# Predict on sample_valid (keeping the predictions on the log scale)
+predictions_log <- predict(model1.lm, newdata = sample_valid)
+```
+
+Evaluate model with R^2 metric:
+
+```{r}
+# Calculate R-squared
+model1.lm.r_sqrt <- cor(sample_valid$log_pSat_Pa, predictions_log)^2
+
+# Print the result
+print(paste0("Model1.lm R-squared: ", model1.lm.r_sqrt))
+```
+
+Next we do cross-validation with combined sample_train and sample_valid on model1.lm
+
+```{r}
+# Combine sample_valid and sample_train
+combined_data <- rbind(sample_train, sample_valid)
+
+# Define the cross-validation method (e.g., 10-fold)
+train_control <- trainControl(method = "cv", number = 5)
+
+# Train the model with cross-validation
+model1.lm.cv <- train(log_pSat_Pa ~ ., 
+                 data = combined_data, 
+                 method = "lm", 
+                 trControl = train_control)
+
+```
+
+Print results:
+
+```{r}
+# Print the result
+model1.lm.cv
+
+```
+
+
+

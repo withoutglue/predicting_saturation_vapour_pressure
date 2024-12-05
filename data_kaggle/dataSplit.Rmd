@@ -13,6 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 ```
+Read kaggle_train
+
+```{r}
+kaggle_train <- read.csv("train_kaggle.csv", header = TRUE)
+```
 
 
 We use kaggle_train as a source for all subsets that we produce here
@@ -20,20 +25,14 @@ We use kaggle_train as a source for all subsets that we produce here
 ```{r}
 # Set a seed for reproducibility (optional but recommended)
 
-# Sample 4000 rows for sample_kaggle_test
-sample_kaggle_test <- kaggle_train[sample(nrow(kaggle_train), 4000), ]
+# Sample 4000 rows for sample_kaggle_valid from kaggle_train
+sample_kaggle_valid <- kaggle_train[sample(nrow(kaggle_train), 4000), ]
 
 # Remove the sampled rows from kaggle_train
-remaining_data <- kaggle_train[!(rownames(kaggle_train) %in% rownames(sample_kaggle_test)), ]
+sample_kaggle_train <- kaggle_train[!(rownames(kaggle_train) %in% rownames(sample_kaggle_valid)), ]
 
-# Sample 4000 rows from the remaining data for sample_kaggle_valid
-sample_kaggle_valid <- remaining_data[sample(nrow(remaining_data), 4000), ] 
-
-# The remaining rows become sample_kaggle_train
-sample_kaggle_train <- remaining_data[!(rownames(remaining_data) %in% rownames(sample_kaggle_valid)), ] 
 
 # Write the data frames to CSV files in your working directory
-write.csv(sample_kaggle_test, "sample_kaggle_test.csv", row.names = FALSE)
 write.csv(sample_kaggle_valid, "sample_kaggle_valid.csv", row.names = FALSE)
 write.csv(sample_kaggle_train, "sample_kaggle_train.csv", row.names = FALSE)
 ```

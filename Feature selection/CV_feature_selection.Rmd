@@ -1,0 +1,84 @@
+---
+title: "CV feature selection"
+author: "KS"
+date: "2024-12-05"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ISLR2)
+library(leaps)
+```
+This procedure will follow ISL chapter 6 lab regarding feature selection with cross-validation
+
+
+Read full data
+
+```{r}
+kag_train <- read.csv("train_kaggle.csv", header = TRUE)
+```
+
+Look at the dimensions
+
+```{r}
+dim(kag_train)
+```
+
+```{r}
+regfit.full <- regsubsets(log_pSat_Pa ~., data = kag_train, nvmax = 26)
+reg.summary <- summary(regfit.full)
+reg.summary$rsq
+```
+Plot
+
+```{r}
+par(mfrow = c(2 , 2) )
+plot(reg.summary$rss , xlab = " Number of Variables ", ylab = " RSS ", type = "l")
+plot(reg.summary$adjr2 , xlab = " Number of Variables ", ylab = " Adjusted RSq ", type = "l")
+
+```
+
+```{r}
+which.max(reg.summary$adjr2)
+
+
+```
+
+```{r}
+plot(reg.summary$cp, xlab = " Number of Variables ", ylab = "Cp", type = "l")
+which.min(reg.summary$cp)
+
+```
+
+Now we can use this function (alternate the number parameter in function below) to choose variables that seems to be most important based on this procedure
+
+```{r}
+coef(regfit.full,13)
+
+```
+
+Forward and backward feature selection using same function
+
+```{r}
+regfit.fwd <- regsubsets(log_pSat_Pa ~., data = kag_train, nvmax = 26, method = "forward")
+regfit.bwd <- regsubsets(log_pSat_Pa ~., data = kag_train, nvmax = 26, method = "backward")
+```
+
+We can print now features using forward methhod for chosen amount of variables
+
+```{r}
+coef(regfit.fwd, 13)
+```
+
+
+And same for backwards
+
+```{r}
+coef(regfit.bwd, 13)
+```
+

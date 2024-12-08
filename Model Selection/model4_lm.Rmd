@@ -1,0 +1,119 @@
+---
+title: "model4_lm"
+author: "KS"
+date: "2024-12-06"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(caret)
+```
+
+
+Load data:
+
+```{r}
+# read the data sets
+sample_train <- read.csv("sample_kaggle_train.csv", header=TRUE)
+sample_valid <- read.csv("sample_kaggle_valid.csv", header=TRUE)
+
+```
+
+Drop variables based on EDA and results from model2.lm. That is dropped variables that model2.lm did not see as statistically meaningful.
+
+```{r}
+# Define the columns to keep (based on your latest output)
+cols_to_keep <- c("NumOfC", "NumOfN", "NumHBondDonors", "NumOfConf", "parentspecies", "C.C..non.aromatic.", "hydroxyl..alkyl.", 
+                  "aldehyde", "carboxylic.acid", "ester", "ether..alicyclic.", 
+                  "nitrate", "nitro", "hydroperoxide", "log_pSat_Pa") 
+
+# Select only those columns from each data set
+sample_train <- sample_train %>% 
+  select(all_of(cols_to_keep))
+
+sample_valid <- sample_valid %>% 
+  select(all_of(cols_to_keep))
+```
+
+```{r}
+dim(sample_train_fwd)
+```
+Tranformation:
+
+```{r}
+# Apply log transformation to NumOfConf
+sample_train_fwd <- sample_train %>% 
+  mutate(NumOfConf = log(NumOfConf))
+
+sample_valid_fwd <- sample_valid %>% 
+  mutate(NumOfConf = log(NumOfConf))
+```
+
+```{r}
+write.csv(sample_train_fwd, file = "sample_train_fwd.csv")
+write.csv(sample_valid_fwd, file = "sample_valid_fwd.csv")
+```
+
+
+Train model4.lm
+
+```{r}
+model4.lm <- lm(log_pSat_Pa ~ ., data=sample_train_fwd)
+summary(model4.lm)
+```
+
+Prediction on validation set:
+
+```{r}
+# Predict on sample_valid (keeping the predictions on the log scale)
+predictions_log <- predict(model4.lm, newdata = sample_valid_fwd)
+```
+
+Evaluate model with R^2 metric on validation set:
+
+```{r}
+# Calculate R-squared
+model4.lm.r_sqrt <- cor(sample_valid_fwd$log_pSat_Pa, predictions_log)^2
+
+# Print the result
+print(paste0("Model4.lm R-squared: ", model4.lm.r_sqrt))
+```
+
+Next we do cross-validation with combined sample_train and sample_valid on model4.lm
+
+```{r}
+# Combine sample_valid and sample_train
+combined_data <- rbind(sample_train_fwd, sample_valid_fwd)
+
+# Define the cross-validation method (e.g., 10-fold)
+train_control <- trainControl(method = "cv", number = 5)
+
+# Train the model with cross-validation
+model4.lm.cv <- train(log_pSat_Pa ~ ., 
+                 data = combined_data, 
+                 method = "lm", 
+                 trControl = train_control)
+
+```
+
+Print results:
+
+```{r}
+# Print the result
+model4.lm.cv
+
+```
+
+Predict
+
+```{r}
+
+```
+

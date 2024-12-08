@@ -1,0 +1,99 @@
+---
+title: "kaggle_Ridge_regression"
+author: "Simo"
+date: "12/7/2024"
+output: pdf_document
+---
+
+```{r}
+
+library(tree)
+library(gbm)
+library(randomForest)
+library(tidyverse)
+library(glmnetUtils)
+```
+
+```{r}
+Rsquared <- function(predictions, actual) {
+ssres <- sum((predictions - actual)^2)
+sstot <- sum((actual- mean(actual))^2)
+1-ssres/sstot
+}
+```
+
+
+```{r}
+train.kag.samp <- read.csv("sample_kaggle_train.csv", header=T)
+valid.kag.samp <- read.csv("sample_kaggle_valid.csv", header=T)
+```
+
+
+```{r}
+# Make a prediction matrix x and the response y
+x.train <- model.matrix(log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")])[,-1]
+y.train <- train.kag.samp$log_pSat_Pa
+x.test <- model.matrix(log_pSat_Pa ~ ., data = valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")])[,-1]
+y.test <- valid.kag.samp$log_pSat_Pa
+```
+
+
+```{r}
+# fit the Ridge regression model with different lambdas
+grid <- 10^seq(10, -2, length=100)
+ridge.kaggle <- glmnet(x.train, y.train, alpha=0, lambda=grid, thresh=1e-12)
+```
+
+
+```{r}
+# get the best value for lambda
+set.seed(13)
+cv.out <- cv.glmnet(x.train, y.train, alpha=0)
+plot(cv.out)
+best.lambda <- cv.out$lambda.min
+best.lambda
+```
+
+We see, that the best value for $\lambda$ that gives the best cross validation error is 0.2159944
+
+```{r}
+# test R-squared
+ridge.pred <- predict(ridge.kaggle, s=best.lambda, newx=x.test)
+Rsquared(ridge.pred, y.test)
+```
+
+Lasso:
+
+```{r}
+lasso.kaggle <- glmnet(x.train, y.train, alpha=1, lambda=grid)
+plot(lasso.kaggle)
+
+```
+
+```{r}
+# lasso test r-squared
+set.seed(14)
+cv.out <- cv.glmnet(x.train, y.train, alpha=1)
+plot(cv.out)
+best.lambda <- cv.out$lambda.min
+lasso.pred <- predict(lasso.kaggle, s=best.lambda, newx = x.test)
+
+Rsquared(lasso.pred, y.test)
+```
+
+
+Lasso gives us a little better test R-squared:  0.6907309
+
+```{r}
+# how many coefficients lasso puts to 0?
+lasso.coef <- predict(lasso.kaggle, type="coefficients", s = best.lambda)
+lasso.coef
+```
+
+
+
+
+
+
+
+

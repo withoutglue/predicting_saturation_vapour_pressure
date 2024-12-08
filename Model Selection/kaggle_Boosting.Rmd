@@ -1,0 +1,52 @@
+---
+title: "kaggle_Boosting"
+author: "Simo"
+date: "12/5/2024"
+output: pdf_document
+---
+
+```{r}
+
+library(tree)
+library(gbm)
+library(randomForest)
+library(tidyverse)
+
+```
+
+```{r}
+Rsquared <- function(predictions, actual) {
+ssres <- sum((predictions - actual)^2)
+sstot <- sum((actual- mean(actual))^2)
+1-ssres/sstot
+}
+```
+
+
+```{r}
+train.kag.samp <- read.csv("sample_kaggle_train.csv", header=T)
+valid.kag.samp <- read.csv("sample_kaggle_valid.csv", header=T)
+```
+
+
+```{r}
+boost.kaggle <- gbm(log_pSat_Pa ~ ., data=train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")],
+                    distribution="gaussian", n.trees = 5000, interaction.depth = 4)
+summary(boost.kaggle)
+```
+
+```{r}
+
+```
+
+```{r}
+plot(boost.kaggle, i = "NumHBondDonors")
+plot(boost.kaggle, i = "NumOfConf")
+ 
+```
+
+```{r}
+yhat.boost <- predict(boost.kaggle, newdata=valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")], n.trees=5000)
+Rsquared(yhat.boost, valid.kag.samp[,"log_pSat_Pa"])
+```
+

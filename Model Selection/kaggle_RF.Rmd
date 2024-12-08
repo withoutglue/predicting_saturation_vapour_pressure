@@ -1,0 +1,65 @@
+---
+title: "kaggle_RF"
+author: "Simo"
+date: "12/5/2024"
+output: pdf_document
+---
+
+```{r}
+library(tree)
+library(gbm)
+library(randomForest)
+library(tidyverse)
+
+```
+
+```{r}
+train.kag.samp <- read.csv("sample_kaggle_train.csv", header=T)
+valid.kag.samp <- read.csv("sample_kaggle_valid.csv", header=T)
+```
+
+```{r}
+library(randomForest)
+set.seed(12)
+
+bag.kaggle <- randomForest(log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")], mtry = 24, importance = TRUE)
+bag.kaggle
+```
+
+```{r}
+
+# bagging plot and prediction, test MSE and validation and train R^2
+yhat.bag <- predict(bag.kaggle, newdata=valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")])
+
+plot(yhat.bag, valid.kag.samp[,"log_pSat_Pa"])
+abline(0,1)
+mean((yhat.bag - valid.kag.samp[,"log_pSat_Pa"])^2)
+
+Rsquared(yhat.bag, valid.kag.samp[,"log_pSat_Pa"])
+Rsquared(predict(bag.kaggle), train.kag.samp[,"log_pSat_Pa"])
+```
+
+```{r}
+rf.kaggle <- randomForest(log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")], mtry = 8, importance = TRUE)
+yhat.rf <- predict(rf.kaggle, newdata=valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")])
+
+Rsquared(yhat.rf, valid.kag.samp[,"log_pSat_Pa"])
+importance(rf.kaggle)
+```
+
+Let's try the random forest with 12 of the predictors:
+
+```{r}
+train.parsed <- train.kag.samp[,!names(train.kag.samp) %in% c("NumOfConfUsed", "C.C..non.aromatic.", "C.C.C.O.in.non.aromatic.ring", "aldehyde", "ester", "ether..alicyclic.", "nitrate", "nitro", "aromatic.hydroxyl", "peroxide", "nitroester", "NumOfN", "ID", "parentspecies")]
+valid.parsed <- valid.kag.samp[,!names(valid.kag.samp) %in% c("NumOfConfUsed", "C.C..non.aromatic.", "C.C.C.O.in.non.aromatic.ring", "aldehyde", "ester", "ether..alicyclic.", "nitrate", "nitro", "aromatic.hydroxyl", "peroxide", "nitroester", "NumOfN", "ID", "parentspecies")]
+
+```
+
+```{r}
+rf.parsed <- randomForest(log_pSat_Pa ~ ., data = train.parsed, mtry = 8, importance = TRUE)
+yhat.rf.parsed <- predict(rf.parsed, newdata=valid.parsed)
+
+Rsquared(yhat.rf.parsed, valid.parsed[,"log_pSat_Pa"])
+#importance(rf.parsed)
+```
+

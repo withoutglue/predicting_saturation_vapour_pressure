@@ -1,0 +1,71 @@
+---
+title: "kaggle_PCR"
+author: "Simo"
+date: "12/7/2024"
+output: pdf_document
+---
+
+```{r}
+library(pls)
+library(tree)
+library(gbm)
+library(randomForest)
+library(tidyverse)
+library(glmnetUtils)
+```
+
+```{r}
+Rsquared <- function(predictions, actual) {
+ssres <- sum((predictions - actual)^2)
+sstot <- sum((actual- mean(actual))^2)
+1-ssres/sstot
+}
+```
+
+
+```{r}
+train.kag.samp <- read.csv("sample_kaggle_train.csv", header=T)
+valid.kag.samp <- read.csv("sample_kaggle_valid.csv", header=T)
+```
+
+
+```{r}
+# fit the PCR model
+pcr.kaggle <- pcr(log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")], scale=TRUE, validation="CV")
+summary(pcr.kaggle)
+```
+
+```{r}
+validationplot(pcr.kaggle, val.type = "R2")
+```
+
+We notice that the variance explained is largest already with some 17 or so variables, and with 12-15 we get almost as good R2.
+
+```{r}
+# R-squared
+pcr.pred <- predict(pcr.kaggle, valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")], ncomp = 17)
+Rsquared(pcr.pred, valid.kag.samp$log_pSat_Pa)
+```
+
+Partial least squares:
+
+```{r}
+pls.kaggle <- plsr(log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")], scale=TRUE, validation="CV")
+summary(pls.kaggle)
+```
+
+```{r}
+validationplot(pls.kaggle, val.type = "R2")
+```
+
+```{r}
+# pls r-squared
+pls.pred <- predict(pls.kaggle, valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")], ncomp = 24)
+Rsquared(pls.pred, valid.kag.samp$log_pSat_Pa)
+```
+
+
+
+
+
+

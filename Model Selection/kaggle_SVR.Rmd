@@ -1,0 +1,56 @@
+---
+title: "kaggle_SVR"
+author: "Simo"
+date: "12/7/2024"
+output: pdf_document
+---
+
+```{r}
+library(e1071)
+library(tree)
+library(gbm)
+library(randomForest)
+library(tidyverse)
+library(glmnetUtils)
+```
+
+```{r}
+Rsquared <- function(predictions, actual) {
+ssres <- sum((predictions - actual)^2)
+sstot <- sum((actual- mean(actual))^2)
+1-ssres/sstot
+}
+```
+
+
+```{r}
+train.kag.samp <- read.csv("sample_kaggle_train.csv", header=T)
+valid.kag.samp <- read.csv("sample_kaggle_valid.csv", header=T)
+```
+
+
+```{r}
+set.seed(1)
+svm.kaggle <- svm(log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")])
+
+svm.pred <- predict(svm.kaggle, newdata=valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies")])
+Rsquared(svm.pred, valid.kag.samp$log_pSat_Pa)
+```
+
+
+```{r}
+tuneResult <- tune(svm, log_pSat_Pa ~ ., data = train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies")], ranges=list(epsilon=c(0.2, 0.8), cost=2^(3:5)))
+print(tuneResult)
+plot(tuneResult)
+```
+
+
+
+
+
+
+
+
+
+
+

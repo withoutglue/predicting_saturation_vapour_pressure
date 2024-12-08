@@ -1,0 +1,48 @@
+---
+title: "kaggle_BART"
+author: "Simo"
+date: "12/5/2024"
+output: pdf_document
+---
+
+```{r}
+library(BART)
+library(tree)
+library(gbm)
+library(randomForest)
+library(tidyverse)
+
+```
+
+```{r}
+Rsquared <- function(predictions, actual) {
+ssres <- sum((predictions - actual)^2)
+sstot <- sum((actual- mean(actual))^2)
+1-ssres/sstot
+}
+```
+
+
+```{r}
+train.kag.samp <- read.csv("kaggle/sample_kaggle_train.csv", header=T)
+valid.kag.samp <- read.csv("kaggle/sample_kaggle_valid.csv", header=T)
+```
+
+
+```{r}
+xtrain <- train.kag.samp[,!names(train.kag.samp) %in% c("ID", "parentspecies", "log_pSat_Pa")]
+ytrain <- train.kag.samp[,"log_pSat_Pa"]
+xtest <- valid.kag.samp[,!names(valid.kag.samp) %in% c("ID", "parentspecies", "log_pSat_Pa")]
+ytest <- valid.kag.samp[,"log_pSat_Pa"]
+```
+
+```{r}
+set.seed(11)
+bart.kaggle <- gbart(xtrain, ytrain, x.test = xtest)
+```
+
+```{r}
+
+Rsquared(bart.kaggle$yhat.test.mean, ytest)
+```
+

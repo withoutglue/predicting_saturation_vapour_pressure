@@ -40,7 +40,7 @@ From the picture we can see that up left corner has some strong correlation goin
 
 ## Data split
 
-We decided to split the Kaggle training data into sub sets train and validation ()data 
+We decided to split the Kaggle training data into sub sets train and validation. Our validation was size 4 000 and rest was left for training. 
 
 ## Feature selection for linear models
 
@@ -74,14 +74,19 @@ To out perform our dummy model we choose to fit a linear model with all variable
 
 #### Linear with selected variables
 
-As mentioned in feature selection section we proceeded with subsets that we got out from forward and backward feature selection with following variables:
+As mentioned in feature selection section we proceeded with subsets that we got out from forward and backward feature selection. Subset from forward selection worked better with our linear model and it contained following variables:
 
 cols_to_keep <- c("NumOfC", "NumOfN", "NumHBondDonors", "NumOfConf", "parentspecies", "C.C..non.aromatic.", "hydroxyl..alkyl.", 
                   "aldehyde", "carboxylic.acid", "ester", "ether..alicyclic.", 
                   "nitrate", "nitro", "hydroperoxide", "log_pSat_Pa")
 
+We ended up using this prediction as our model since it scored the highest out of our model in Kaggle forum. Our score was 0.7098.
 
 ####PCR
+
+Here we used full scaled data set (- ID and - parentspecies) and CV to figure out the score for this model.
+
+We ended up trying PCR with 14 components since Rsquared seemed to converge with this amount of components. It scored only 0.67 on our cross validation (5 folds).
 
 #### SVR
 
@@ -89,8 +94,25 @@ We tried SVR with different features. First we put the full data matrix into SVR
 
 Based on feature selection, we decided to test SVR with log-transformation on NumOfConf. This provided us with lower score than with full data set.
 
-We decided to try SVR with the data set we got out from feature selection
+We decided to try SVR with the data set we got out from forward feature selection but it scored less than model with all features.
 
-RF
-Cluster model
+We finally made predictions with SVR trained on scaled data set that had no NumOfConf included. This was due to the fact that this variable was distributed a little differently on test set than in training set. This made a huge difference in SVR performance on Rsquared metric.
 
+With this model we scored in Kaggle 0.7473 and this was our highest score in this competition.
+
+#### Cluster model
+
+We had an idea to first find out with hierarchical clustering the number of clusters in the data it gives with all 3 link functions. Then we planned to divide our full training set into subsets by k-means (with number of clusters revealed by HC) and try different models for each subset.
+
+We may try this for the final report but we had no time to bring it here.
+
+
+## Summary
+
+As mentioned we may try this clustering idea still in the final report.
+
+We want to describe the models a little bit in detail that we tried, especially SVR since it scored the highest so far.
+
+And for the final report we document this whole process with more detailed pictures and prints. This report is unfortunately a little bit all over the place.
+
+So after trying with linear models, PCR and SVR, SVR ended up being the best in this competition.

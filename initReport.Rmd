@@ -38,6 +38,8 @@ Next we inspected correlation matrix to see if there is any major correlation re
 ![Correlation matrix](cor_mat.jpg)
 From the picture we can see that up left corner has some strong correlation going on. It makes sense since the variables there are related to number of atoms (in general and some specific atoms) and molecular weight.
 
+Later during the project we also plotted the distributions of the test data, and found that the distribution of "NumOfConf" is totally different from the training data. We ended up removing this variable from most of the models. 
+
 ## Data split
 
 We decided to split the Kaggle training data into sub sets train and validation. Our validation was size 4 000 and rest was left for training. 
@@ -69,7 +71,7 @@ Our dummy model was just simply sample mean, in other words expected value of th
 
 #### Linear with all variables
 
-To out perform our dummy model we choose to fit a linear model with all variables included. Our score with this model was 
+To out perform our dummy model we choose to fit a linear model for reference with all variables included. Our score with this model was 0.708. 
 
 
 #### Linear with selected variables
@@ -80,9 +82,9 @@ cols_to_keep <- c("NumOfC", "NumOfN", "NumHBondDonors", "NumOfConf", "parentspec
                   "aldehyde", "carboxylic.acid", "ester", "ether..alicyclic.", 
                   "nitrate", "nitro", "hydroperoxide", "log_pSat_Pa")
 
-We ended up using this prediction as our model since it scored the highest out of our model in Kaggle forum. Our score was 0.7098.
+Our score in kaggle was 0.7098 with this model. 
 
-####PCR
+#### PCR
 
 Here we used full scaled data set (- ID and - parentspecies) and CV to figure out the score for this model.
 
@@ -115,4 +117,4 @@ We want to describe the models a little bit in detail that we tried, especially 
 
 And for the final report we document this whole process with more detailed pictures and prints. This report is unfortunately a little bit all over the place.
 
-So after trying with linear models, PCR and SVR, SVR ended up being the best in this competition.
+So after trying with linear models, Random forest, PCR and SVR, SVR ended up being the best in this competition.

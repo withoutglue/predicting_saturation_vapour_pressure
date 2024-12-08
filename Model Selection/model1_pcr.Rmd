@@ -1,0 +1,77 @@
+---
+title: "PCR"
+author: "KS"
+date: "2024-12-07"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(pls)
+```
+
+```{r}
+# read the data sets
+sample_train <- read.csv("sample_kaggle_train.csv", header=TRUE)
+sample_valid <- read.csv("sample_kaggle_valid.csv", header=TRUE)
+train_kaggle <- read.csv("train_kaggle.csv", header=TRUE)
+test_kaggle <- read.csv("test_kaggle.csv", header=TRUE)
+```
+
+```{r}
+# drop column ID since it does not bring anything into the mix. Let's drop column parentspecies since it is categorical and this version of PCR is not capable to deal with it
+sample_train <- sample_train %>% 
+  select(-ID, -parentspecies)
+
+sample_valid <- sample_valid %>% 
+  select(-ID, -parentspecies)
+
+train_kaggle <- train_kaggle %>% 
+  select(-ID, -parentspecies)
+
+test_kaggle <- test_kaggle %>% 
+  select(-ID, -parentspecies)
+```
+
+```{r}
+full_kaggle <- bind_rows(train_kaggle, test_kaggle)
+```
+
+
+```{r}
+# Fit PCR model
+pcr.fit <- pcr(log_pSat_Pa ~ ., data=full_kaggle, scale = TRUE, validation = "CV")
+```
+
+
+```{r}
+# Summarize fitted model
+summary(pcr.fit)
+```
+
+Based on this we could say that adjCV stabilizes around 13 to 14 components. Variance explained crosses 90% with 14 components. We choose 14 components to avoid over fitting.
+
+```{r}
+# Plot CV scores, Score is R2
+validationplot(pcr.fit, val.type = "R2")
+
+```
+
+Now lets train this model with train data and test it on valid data
+
+```{r}
+
+# Fit the PCR model with 14 components
+pcr.fit <- pcr(log_pSat_Pa ~ ., data = sample_train, scale = TRUE, ncomp = 14)
+
+# Predict on the validation set
+predictions <- predict(pcr.fit, newdata = sample_valid, ncomp = 14)
+
+# Calculate R-squared
+rsquared <- 1 - sum((sample_valid$log_pSat_Pa - predictions)^2) / 
+            sum((sample_valid$log_pSat_Pa - mean(sample_valid$log_pSat_Pa))^2)
+
+# Print the R-squared value
+print(paste("R-squared:", rsquared))
+```
+

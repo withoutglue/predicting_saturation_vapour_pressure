@@ -19,31 +19,34 @@ library(corrplot)
 
 ```{r, echo=FALSE}
 train_kaggle <- read.csv("train_kaggle.csv")
+train_kaggle <- train_kaggle[train_kaggle$parentspecies != "",]
+test_kaggle <- read.csv("test_kaggle.csv", header=TRUE)
 ```
+
+
+
 
 ## Introduction
 
 This document is term project final report on course Introduction to Machine Learning Autumn 2024 at University of Helsinki.
 
-Term project was based on GeckoQ data set that had roughly 32 000 atmospherically relevant molecules with 24 variables. Our task was simply to train best possible regression model on this data set of atmospheric measurements for log_pSat_Pa(response). Our best solution would then be evaluated and compared and ranked against solutions by other groups.
+Term project was based on GeckoQ data set that had roughly 32 000 atmospherically relevant molecules with 24 variables. Our task was simply to train best possible prediction model on this data set of atmospheric measurements for log_pSat_Pa(response). Our best solution would then be evaluated and compared and ranked against solutions by other groups.
 
-We went on to explore the data first, carry out feature engineering, try out different models that we learned during the course, evaluate our models performance on chosen metrics and finally perform model selection with what we would take part in this Kaggle competition against other groups.
+We went on to explore the data first, carry out feature engineering, try out different models that we learned during the course, evaluate our models performance on chosen metrics and finally perform model selection with what we would take part in this Kaggle competition.
 
-In this report we explain our approach to this task in detail with some interesting insights and argue our decision making process. Our model performed rather close to winning team and we ended up somewhere in the middle of the pack in the final rankings. The model we ended up choosing was SVR. But more of this process in the upcoming sections.
+In this report we first go through our evaluation metric and data details. Then we explain how we inspected the data and what method we used. After that we explain our approach to feature selection. Finally we introduce our models, inference and conclusions. Our model performed rather close to winning team and we ended up somewhere in the middle of the pack in the final rankings. The model we ended up choosing was SVR.
 
 Authors of this report are Simo Liimatta and Kim Ståhlberg. Our group number was 16.
 
 ## Evaluation metric
 
-Evaluation metric used in this task was dictated by course personnel and it was:
+Evaluation metric used in this task was dictated by course personnel and it was the variance explained, R-squared:
 
 $$
 R^2 = \frac{TSS - RSS}{TSS} = 1 - \frac{RSS}{TSS}
 $$
 
-Where $RSS = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2$ and $TSS = \sum_{i=1}^{n} (y_i - \bar{y})^2$ and $y_i$ is observed value and $\hat{y}_i$ is predicted value. This metric provides a proportional mean squared error and it takes values between 1 (perfect fit) and 0 (worse fit). With this metric it is possible to compare models independent of the absolute scale these models operate on and it fits well to evaluate regression models.
-
-When later in this document we mention score we mean specifically this score if not defined otherwise.
+Where $RSS = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2$ and $TSS = \sum_{i=1}^{n} (y_i - \bar{y})^2$ and $y_i$ is observed value and $\hat{y}_i$ is predicted value. This metric provides a proportional mean squared error and it takes values between 1 (perfect fit) and 0 (worst fit). With this metric it is possible to compare models independent of the absolute scale these models operate on and it fits well to evaluate regression models. Later in this document when we mention "score", we mean specifically this R-squared metric if not defined otherwise.
 
 ## Data
 
@@ -57,15 +60,19 @@ Response variable was logarithmic transformation of pSat mentioned above and it 
 
 Data was already split into training set (size 26 637) and test set (size 5 000). Training set included response variable and test set did not.
 
-This data set had no missing values.
+This data set had no missing values in numeric variable columns. "Parentspecies" variable was missing 210 entries. 
+
+
 
 ### Visual exploration
 
 Visual exploration of the predictor variables, including examination of their distributions and scatter plots against the response variable (log(pSat)), did not reveal any patterns or relationships that we felt like would need further action.
 
-When exploring linearity between response and each variable we fitted a linear model per each and looked at the residual plots. NumOfConf was the only variable that seemed to have non-linear relation with response. You can see from the plot (Figure 1. lower plot) that residuals has this funnel-like shape that indicates non-linearity in relation.
+When exploring linearity between response and each variable we fitted a linear model per each and looked at the residual plots. NumOfConf was the variable that seemed to have the least linear relationship between the response. You can see from the plot (Figure 1. lower plot) that residuals has this funnel-like shape that indicates non-linearity and non-constant variance in relation.
 
 Inspecting correlation matrix we saw that there is this strong correlation between those variables in top left corner...
+
+We also inspected the variables using the Principal Component Analysis (PCA). Figure 2 shows the PCA plot. From it, we can inspect, that the first 2 principal components explain around 28% of the total variability of the response. We also see, that quite some number of the variables add little to none explaining power to the variance. We explored this further in subset selection for linear regression.
 
 ### Feature engineering
 
@@ -99,11 +106,36 @@ abline(h = 0, col = "red", lty = 2)
 par(mfrow = c(1, 1))
 ```
 
+```{r PCA, echo=FALSE, fig.width=6, fig.height=8, fig.cap="Principal component analysis of the variables"}
+library(tidyverse)
+library(ggfortify)
+
+# Scale the data
+kag_full <- rbind(train_kaggle[,!names(train_kaggle) %in% c("ID", "log_pSat_Pa")], test_kaggle[,!names(test_kaggle) %in% c("ID")])
+kaggle_train_scaledforPCA <- kag_full[,!names(kag_full) %in% c("parentspecies")]
+
+
+for(i in 1:length(kaggle_train_scaledforPCA)) {
+  kaggle_train_scaledforPCA[,i] <- (kaggle_train_scaledforPCA[,i] - mean(kaggle_train_scaledforPCA[,i]))/sd(kaggle_train_scaledforPCA[,i])
+  
+}
+
+# PCA
+kaggle_trainPCA <- prcomp(kaggle_train_scaledforPCA)
+
+autoplot(kaggle_trainPCA,data=cbind(kaggle_train_scaledforPCA, "parentspecies"=kag_full$parentspecies), col="parentspecies",
+loadings=TRUE,loadings.label=TRUE)
+```
+
+
+
+
+
 ## Modeling
 
-We started modeling with a dummy model that was just an average of response and this model gave us a score of 0 with test set. This model and score served as a starting point for us. Next logical step to try to best this model was fitting a linear model with all features. This model gave us a score of XYZ and acted now as our baseline. 
+We started modeling with a dummy model that was just an average of response and this model gave us a score of 0 with test set. This model and score served as a starting point for us. Next logical step to try to best this model was fitting a linear model with all features. This model gave us a score of 0.711 and acted now as our new reference model. 
 
-From this point on we decided to try following models and see how they perform against out baseline; linear model with feature selection and engineering, PCR, RF and SVM. In the following sections we describe these models in more detail.
+From this point on we decided to try following models and see how they perform against out baseline; linear model with feature selection and engineering, PCR, RF and tree based methods, and SVM. In the following sections we describe these models in more detail.
 
 With all models we used cross-validation (5 folds) as validation method to provide more robust approximation of our score in comparison to just splitting our training data into (new subsets of training data) fixed training and validation sets. 
 
@@ -111,37 +143,45 @@ With all models we used cross-validation (5 folds) as validation method to provi
 
 Based on the 
 
-### Prime Component Regression
+### Principal Component Regression
 
-### RF (tree based methods)
+### Tree based methods
+
+We implemented a selection of tree-based methods in order to better our prediction score. These included basic regression tree, Bagging, Boosting, Random Forest, and Bayesian Additive Regression Tree. 
+
+Interestingly, the basic regression tree used only 3 variables to train the regression tree. We implemented the trees to the full training data set, the feature engineered subset and both versions with and without the transformation of the NumOfConf variable. In the end, none of the regression trees with these data sets ended up giving much bigger score than the reference full linear regression. The largest score we got was from Random Forest, which was 0.73.
 
 ### SVR
 
-
+We also implemented Support Vector regression (SVR). Similarly, as in the tree based methods, we tried the SVR on the full data set, the selected subset, and both with the log transformation of NumOfConf. Using the full data set, the model yielded the private score of 0.739, which ended up being the highest score from all our models. 
 
 ## Best solution
 
 SVR, data set, parameters, short description how it really works.
 
+```{r echo=FALSE}
+
+scores <- data.frame(Model=c("Full linear regression", "Subset linear regression", "PCR", "RF", "SVR"), Prive_score=c(0.711,0.69,0.691,0.728,0.739), Public_score=c(0,0,0,0,0))
+library(knitr)
+kable(scores, caption="Private and public scores of the most important models")
+```
+
+
 ## Final thoughts
 
 After seeing the great student presentations from the top scorers we started to reflect our approach to this task. First impression was that SVR appeared on a lot of lists, and it was our best model. (SOME THOUGHTS HERE WHY SVR WAS THE BEST. JUST ONE OR TWO SENTENCES).
 
-Other thing that caught our attention was the while we focused on reducing the dimensions in our models others seemed to not give a damn of theirs. Maybe this is a good demonstration that dimension reduction is not so important while dealing with dimensions like in this task.
+Other thing that caught our attention was the while we focused on reducing the dimensions in our models others seemed to not give a damn about theirs. Maybe this is a good demonstration that dimension reduction is not so important while dealing with dimensions like in this task.
 
-Another difference that we saw up on the stage was that most of them seemed to try many models not mentioned in detail during this course. This involved neural networks and different boosting methods just mention couple first ones that comes to mind. Our approach was to use models that we understood and that we experimented with during the exercise sets. I am not sure if this made huge difference in our score and in my opinion we were quite close anyways with our approach.
+Another difference that we saw up on the stage was that most of them seemed to try many models not mentioned in detail during this course. This involved neural networks and different boosting methods just mention couple first ones that comes to mind. Our approach was to use models that we understood and that we experimented with during the exercise sets. I am not sure if this made huge difference in our score and in my opinion we were quite close with our approach.
 
-Maybe one could argue that with dimensions like we had, computation is not really a problem and algorithmic model and parameter brute forcing is viable option to get things going and fine tuning and domain knowledge comes into play after this kinda fast random exploration of models and features.
+One could argue that with dimensions like we had, computation is not really a problem and algorithmic model and parameter brute forcing is viable option to get things going. Fine tuning and domain knowledge seems to come into play after this kind of fast random exploration of models and features.
 
-We found this course very interesting and while working this term project a lot of things tough during the lectures came super nicely into practice.
+Future exploration and improving the model would include one-hot-encoding the "parentspecies" variable, trying out the polynomial regression with different degree polynomials and what degree would yield best test score or MSE. 
+
+We found this course very interesting and while working this term project a lot of things which were difficult during the lectures came super nicely into practice.
 
 
-#### Notes
 
-one hot en-coding
-PCA
-polynomit
 
-if we could this again with this information..
-score table (private public)
 

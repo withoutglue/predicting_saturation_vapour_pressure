@@ -1,0 +1,147 @@
+---
+title: "IML Final Report"
+author: "KS, SL"
+date: "2024-12-16"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(caret)
+library(pls)
+library(leaps)
+library(corrplot)
+```
+
+```{r, echo=FALSE}
+train_kaggle <- read.csv("train_kaggle.csv")
+```
+
+## Introduction
+
+This document is term project final report on course Introduction to Machine Learning Autumn 2024 at University of Helsinki.
+
+Term project was based on GeckoQ data set that had roughly 32 000 atmospherically relevant molecules with 24 variables. Our task was simply to train best possible regression model on this data set of atmospheric measurements for log_pSat_Pa(response). Our best solution would then be evaluated and compared and ranked against solutions by other groups.
+
+We went on to explore the data first, carry out feature engineering, try out different models that we learned during the course, evaluate our models performance on chosen metrics and finally perform model selection with what we would take part in this Kaggle competition against other groups.
+
+In this report we explain our approach to this task in detail with some interesting insights and argue our decision making process. Our model performed rather close to winning team and we ended up somewhere in the middle of the pack in the final rankings. The model we ended up choosing was SVR. But more of this process in the upcoming sections.
+
+Authors of this report are Simo Liimatta and Kim Ståhlberg. Our group number was 16.
+
+## Evaluation metric
+
+Evaluation metric used in this task was dictated by course personnel and it was:
+
+$$
+R^2 = \frac{TSS - RSS}{TSS} = 1 - \frac{RSS}{TSS}
+$$
+
+Where $RSS = \sum_{i=1}^{n} (y_i - \hat{y}_i)^2$ and $TSS = \sum_{i=1}^{n} (y_i - \bar{y})^2$ and $y_i$ is observed value and $\hat{y}_i$ is predicted value. This metric provides a proportional mean squared error and it takes values between 1 (perfect fit) and 0 (worse fit). With this metric it is possible to compare models independent of the absolute scale these models operate on and it fits well to evaluate regression models.
+
+When later in this document we mention score we mean specifically this score if not defined otherwise.
+
+## Data
+
+Following is a direct quote from the task instructions concerning our data:
+
+> The term project is based on the GeckoQ dataset with atomic structures of 31,637 atmospherically relevant molecules resulting from the oxidation of $\alpha$-pinene, toluene and decane. The GeckoQ dataset is built to complement data-driven research in atmospheric science. It provides molecular data relevant to aerosol particle growth and new particle formation. A key molecular property related to aerosol particle growth is the saturation vapour pressure (pSat), a measure of a molecule’s ability to condense to the liquid phase. Molecules with low pSat, low-volatile organic compounds (LVOC) are particularly interesting for NPF research.
+
+Acknowledging our limited expertise in atmospheric science, we approached this task using techniques and methods learned in this course, complemented by additional study of linear models and statistics.
+
+Response variable was logarithmic transformation of pSat mentioned above and it took values on numeric scale. Rest of the data set had 3 numeric variables and 21 variables with integer values (some categorical and some counts).
+
+Data was already split into training set (size 26 637) and test set (size 5 000). Training set included response variable and test set did not.
+
+This data set had no missing values.
+
+### Visual exploration
+
+Visual exploration of the predictor variables, including examination of their distributions and scatter plots against the response variable (log(pSat)), did not reveal any patterns or relationships that we felt like would need further action.
+
+When exploring linearity between response and each variable we fitted a linear model per each and looked at the residual plots. NumOfConf was the only variable that seemed to have non-linear relation with response. You can see from the plot (Figure 1. lower plot) that residuals has this funnel-like shape that indicates non-linearity in relation.
+
+Inspecting correlation matrix we saw that there is this strong correlation between those variables in top left corner...
+
+### Feature engineering
+
+Based on the residual plots we decided to try different transformations (exp, log, different order of polynomials) with NumOfConf. From the residual plot in Figure 1 we can see that this transformation truly affects the residuals to appear more randomly than without it. This indicates that this relation with log-transformation is more linear. In practice it increased our score a little bit with linear models so we decided to implement this transformation into our training set and test set. 
+
+```{r combined-residual-plots, echo=FALSE, fig.width=6, fig.height=8, fig.cap="Comparison of Residual Plots; response vs NumOfConf (top) and response vs log(NumOfConf) (bottom)"}
+# Load necessary library (if not already loaded)
+library(tidyverse)
+
+# Assuming your data is already loaded as 'train_kaggle'
+
+# Create the log-transformed NumOfConf variable
+train_kaggle$log_NumOfConf <- log(train_kaggle$NumOfConf)
+
+# Fit the models
+model.resplot <- lm(log_pSat_Pa ~ NumOfConf, data = train_kaggle)
+model.log.resplot <- lm(log_pSat_Pa ~ log_NumOfConf, data = train_kaggle)
+
+# Set up the plotting area (2 rows, 1 column)
+par(mfrow = c(2, 1))
+
+# First residual plot (original model)
+plot(model.resplot, which = 1, main = "Residuals vs. Fitted (NumOfConf)") #Added Main title
+abline(h = 0, col = "red", lty = 2)
+
+# Second residual plot (log-transformed model)
+plot(model.log.resplot, which = 1, main = "Residuals vs. Fitted (log(NumOfConf))") #Added Main title
+abline(h = 0, col = "red", lty = 2)
+
+# Reset plotting parameters to default
+par(mfrow = c(1, 1))
+```
+
+## Modeling
+
+We started modeling with a dummy model that was just an average of response and this model gave us a score of 0 with test set. This model and score served as a starting point for us. Next logical step to try to best this model was fitting a linear model with all features. This model gave us a score of XYZ and acted now as our baseline. 
+
+From this point on we decided to try following models and see how they perform against out baseline; linear model with feature selection and engineering, PCR, RF and SVM. In the following sections we describe these models in more detail.
+
+With all models we used cross-validation (5 folds) as validation method to provide more robust approximation of our score in comparison to just splitting our training data into (new subsets of training data) fixed training and validation sets. 
+
+### Linear models
+
+Based on the 
+
+### Prime Component Regression
+
+### RF (tree based methods)
+
+### SVR
+
+
+
+## Best solution
+
+SVR, data set, parameters, short description how it really works.
+
+## Final thoughts
+
+After seeing the great student presentations from the top scorers we started to reflect our approach to this task. First impression was that SVR appeared on a lot of lists, and it was our best model. (SOME THOUGHTS HERE WHY SVR WAS THE BEST. JUST ONE OR TWO SENTENCES).
+
+Other thing that caught our attention was the while we focused on reducing the dimensions in our models others seemed to not give a damn of theirs. Maybe this is a good demonstration that dimension reduction is not so important while dealing with dimensions like in this task.
+
+Another difference that we saw up on the stage was that most of them seemed to try many models not mentioned in detail during this course. This involved neural networks and different boosting methods just mention couple first ones that comes to mind. Our approach was to use models that we understood and that we experimented with during the exercise sets. I am not sure if this made huge difference in our score and in my opinion we were quite close anyways with our approach.
+
+Maybe one could argue that with dimensions like we had, computation is not really a problem and algorithmic model and parameter brute forcing is viable option to get things going and fine tuning and domain knowledge comes into play after this kinda fast random exploration of models and features.
+
+We found this course very interesting and while working this term project a lot of things tough during the lectures came super nicely into practice.
+
+
+#### Notes
+
+one hot en-coding
+PCA
+polynomit
+
+if we could this again with this information..
+score table (private public)
+

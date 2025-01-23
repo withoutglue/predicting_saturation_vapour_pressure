@@ -1,1 +1,15 @@
 
+This repo contains the term project on course Introduction to Machine Learning Autumn 2024 at University of Helsinki.
+Term project was based on GeckoQ data set that had roughly 32 000 atmospherically relevant molecules with 24 variables. 
+Our task was simply to train best possible prediction model on this data set of atmospheric measurements for log_pSat_Pa(response). 
+Our best solution would then be evaluated and compared and ranked against solutions by other groups in Kaggle Competition organised 
+by the course personnel. We went on to explore the data first, carry out feature engineering, try out different models that we learned 
+during the course, evaluate our models performance on chosen metrics and finally perform model selection with what we would take part 
+in the competition.
+
+Authors of this repo are Simo Liimatta and Kim Ståhlberg.
+
+
+We have removed from the repo the original data used, since we were not allowed to make it public. Therefore, what you can find 
+in this repo is the methodology, the code we used for EDA, feature selection and model selection, as well as the report of the 
+findings and selected models. 
